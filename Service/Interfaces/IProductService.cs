@@ -13,7 +13,7 @@ namespace Service.Interfaces
         Task<List<Product>> GetAllAsync();
         Task<Product> GetByIdAsync(Guid id);
         Task<Product> CreateAsync(ProductCreateDto dto);
-        Task<Product> UpdateAsync(Product product);
+        Task<Product> UpdateAsync(Guid id, ProductUpdateDto dto);
         Task<bool> DeleteAsync(Guid id);
     }
 }

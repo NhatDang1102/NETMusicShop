@@ -52,8 +52,23 @@ namespace Service.Services
             return product;
         }
 
-        public async Task<Product> UpdateAsync(Product product)
+        public async Task<Product> UpdateAsync(Guid id, ProductUpdateDto dto)
         {
+            var product = await _repo.GetByIdAsync(id);
+            if (product == null) return null;
+
+            product.Name = dto.Name;
+            product.Description = dto.Description;
+            product.Price = dto.Price;
+            product.Stock = dto.Stock;
+            product.UpdatedAt = DateTime.UtcNow;
+
+            if (dto.Image != null)
+            {
+                var newUrl = await _imageUploadService.UploadImageAsync(dto.Image);
+                product.ImageUrl = newUrl;
+            }
+
             await _repo.UpdateAsync(product);
             return product;
         }

@@ -39,7 +39,26 @@ namespace MainApp.Controllers
         public async Task<IActionResult> Create([FromForm] ProductCreateDto dto)
         {
             var product = await _service.CreateAsync(dto);
-            return Ok(product);
+            return Ok(new {message = "Đã tạo"});
+        }
+
+        [Authorize(Roles = "manager")]
+        [HttpPut("{id}")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Update(Guid id, [FromForm] ProductUpdateDto dto)
+        {
+            var result = await _service.UpdateAsync(id, dto);
+            if (result == null) return NotFound();
+            return Ok(new {message = "Đã update"});
+        }
+
+        [Authorize(Roles = "manager")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var success = await _service.DeleteAsync(id);
+            if (!success) return NotFound();
+            return Ok(new { message = "Đã xóa." });
         }
 
     }
