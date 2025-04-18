@@ -84,6 +84,14 @@ namespace Service.Services
             await _context.SaveChangesAsync();
 
             await _authRepository.DeleteTempUserAsync(dto.Email);
+            await _mailSender.SendWelcomeEmailAsync(
+         temp.Email,
+         temp.Name,
+         temp.Role,
+         temp.Phone,
+         temp.Address
+);
+
 
             return "xac thuc thanh cong. tk da tao.";
         }
