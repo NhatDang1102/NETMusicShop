@@ -1,7 +1,22 @@
+using Repository.Interfaces;
+using Repository.Models;
+using Repository.Repositories;
+using Service.Helpers;
+using Service.Interfaces;
+using Service.Services;
+
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://localhost:5000");
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddSingleton<MailSender>();
+
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddDbContext<MusicShopDBContext>();
 
 var app = builder.Build();
 
