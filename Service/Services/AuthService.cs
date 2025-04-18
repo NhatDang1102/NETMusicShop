@@ -20,14 +20,14 @@ namespace Service.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IAuthRepository _authRepository;
+        private readonly IAuthRepository _repo;
         private readonly MailSender _mailSender;
         private readonly MusicShopDBContext _context;
         private readonly JwtSettings _jwtSettings;
 
         public AuthService(IAuthRepository authRepository, MailSender mailSender, MusicShopDBContext context, IOptions<JwtSettings> jwtOptions)
         {
-            _authRepository = authRepository;
+            _repo = authRepository;
             _mailSender = mailSender;
             _jwtSettings = jwtOptions.Value;
 
@@ -36,7 +36,7 @@ namespace Service.Services
 
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
-            if (await _authRepository.EmailExistsAsync(dto.Email))
+            if (await _repo.EmailExistsAsync(dto.Email))
                 return "Email đã tồn tại.";
 
             var otp = new Random().Next(100000, 999999).ToString();
@@ -55,7 +55,7 @@ namespace Service.Services
                 CreatedAt = DateTime.Now
             };
 
-            await _authRepository.AddTempUserAsync(tempUser);
+            await _repo.AddTempUserAsync(tempUser);
 
             await _mailSender.SendOtpEmailAsync(dto.Email, otp);
             Console.WriteLine($"[DEBUG] OTP gửi đến email {dto.Email}: {tempUser.OtpCode}");
@@ -65,7 +65,7 @@ namespace Service.Services
 
         public async Task<string> VerifyOtpAsync(OtpVerifyDto dto)
         {
-            var temp = await _authRepository.GetTempUserByEmailAsync(dto.Email);
+            var temp = await _repo.GetTempUserByEmailAsync(dto.Email);
             if (temp == null) return "Email không tồn tại hoặc đã xác minh.";
             if (temp.OtpCode != dto.OtpCode) return "Mã OTP sai.";
             if (temp.OtpExpiresAt < DateTime.Now) return "ma otp heest han.";
@@ -85,7 +85,7 @@ namespace Service.Services
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            await _authRepository.DeleteTempUserAsync(dto.Email);
+            await _repo.DeleteTempUserAsync(dto.Email);
             await _mailSender.SendWelcomeEmailAsync(
          temp.Email,
          temp.Name,
@@ -100,7 +100,7 @@ namespace Service.Services
 
         public async Task<LoginResultDto> LoginAsync(LoginDto dto)
         {
-            var user = await _authRepository.GetUserByEmailAsync(dto.Email);
+            var user = await _repo.GetUserByEmailAsync(dto.Email);
 
             if (user == null || user.Status != "active")
                 throw new Exception("Tài khoản không tồn tại hoặc bị khóa.");
@@ -138,7 +138,7 @@ public async Task<LoginResultDto> FirebaseLoginAsync(FirebaseLoginDto dto)
         var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(dto.IdToken);
         var email = decodedToken.Claims["email"].ToString();
 
-        var user = await _authRepository.GetUserByEmailAsync(email);
+        var user = await _repo.GetUserByEmailAsync(email);
 
         if (user == null)
         {
@@ -152,7 +152,7 @@ public async Task<LoginResultDto> FirebaseLoginAsync(FirebaseLoginDto dto)
                 CreatedAt = DateTime.Now
             };
 
-            await _authRepository.CreateUserAsync(user);
+            await _repo.CreateUserAsync(user);
         }
 
         var claims = new[]
