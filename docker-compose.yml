@@ -2,12 +2,12 @@ version: '3.4'
 
 services:
   mssql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+	image: mcr.microsoft.com/mssql/server:2019-latest
     container_name: mssql-server
     ports:
       - "1433:1433"
     environment:
-      SA_PASSWORD: "nhat123"
+      SA_PASSWORD: "Nhat2478!"
       ACCEPT_EULA: "Y"
     volumes:
       - ./db:/init
@@ -15,5 +15,5 @@ services:
       /bin/bash -c "
         /opt/mssql/bin/sqlservr & 
         sleep 20 && 
-        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P nhat123 -i /init/init.sql
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Nhat2478! -i /init/init.sql
       "
