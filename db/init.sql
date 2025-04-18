@@ -1,0 +1,123 @@
+-- Tạo database nếu chưa có
+IF DB_ID('MusicShopDB') IS NULL
+BEGIN
+    CREATE DATABASE MusicShopDB;
+END
+GO
+
+USE MusicShopDB;
+GO
+
+-- Users Table
+CREATE TABLE Users (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    Email NVARCHAR(100) UNIQUE NOT NULL,
+    Password NVARCHAR(255) NOT NULL,
+    Name NVARCHAR(100),
+    Role NVARCHAR(20) CHECK (Role IN ('admin', 'manager', 'customer')) NOT NULL,
+    Status NVARCHAR(20) DEFAULT 'active',
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Products Table
+CREATE TABLE Products (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL,
+    Description NVARCHAR(MAX),
+    Price DECIMAL(10,2) NOT NULL,
+    Stock INT DEFAULT 0,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Vouchers Table
+CREATE TABLE Vouchers (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    Code NVARCHAR(50) UNIQUE NOT NULL,
+    Discount DECIMAL(5,2) NOT NULL,
+    ExpiredAt DATETIME2,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Carts Table
+CREATE TABLE Carts (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    UserId UNIQUEIDENTIFIER,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_Carts_Users FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+);
+GO
+
+-- Cart_Items Table
+CREATE TABLE CartItems (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    CartId UNIQUEIDENTIFIER,
+    ProductId UNIQUEIDENTIFIER,
+    Quantity INT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_CartItems_Carts FOREIGN KEY (CartId) REFERENCES Carts(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_CartItems_Products FOREIGN KEY (ProductId) REFERENCES Products(Id)
+);
+GO
+
+-- Orders Table
+CREATE TABLE Orders (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    UserId UNIQUEIDENTIFIER,
+    Status NVARCHAR(20) DEFAULT 'pending',
+    VoucherId UNIQUEIDENTIFIER NULL,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_Orders_Users FOREIGN KEY (UserId) REFERENCES Users(Id),
+    CONSTRAINT FK_Orders_Vouchers FOREIGN KEY (VoucherId) REFERENCES Vouchers(Id)
+);
+GO
+
+-- Order_Items Table
+CREATE TABLE OrderItems (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    OrderId UNIQUEIDENTIFIER,
+    ProductId UNIQUEIDENTIFIER,
+    Quantity INT,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_OrderItems_Orders FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE CASCADE,
+    CONSTRAINT FK_OrderItems_Products FOREIGN KEY (ProductId) REFERENCES Products(Id)
+);
+GO
+
+-- Temp_Users Table (đăng ký chờ xác minh OTP)
+CREATE TABLE TempUsers (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    Email NVARCHAR(100) UNIQUE NOT NULL,
+    Password NVARCHAR(255) NOT NULL,
+    Name NVARCHAR(100),
+    Phone NVARCHAR(20),
+    Address NVARCHAR(255),
+    Role NVARCHAR(20) CHECK (Role IN ('customer')) NOT NULL,
+    OtpCode NVARCHAR(6),
+    OtpExpiresAt DATETIME2,
+    CreatedAt DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Payments Table
+CREATE TABLE Payments (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    OrderId UNIQUEIDENTIFIER,
+    TransactionId NVARCHAR(100),
+    PaymentStatus NVARCHAR(20) DEFAULT 'pending',
+    PaymentMethod NVARCHAR(20) DEFAULT 'paypal',
+    PaidAt DATETIME2,
+    CreatedAt DATETIME2 DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETDATE(),
+    CONSTRAINT FK_Payments_Orders FOREIGN KEY (OrderId) REFERENCES Orders(Id)
+);
+GO

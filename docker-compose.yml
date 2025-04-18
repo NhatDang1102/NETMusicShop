@@ -1,0 +1,19 @@
+version: '3.4'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-server
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "nhat123"
+      ACCEPT_EULA: "Y"
+    volumes:
+      - ./db:/init
+    command: >
+      /bin/bash -c "
+        /opt/mssql/bin/sqlservr & 
+        sleep 20 && 
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P nhat123 -i /init/init.sql
+      "
