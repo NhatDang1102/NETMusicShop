@@ -48,5 +48,12 @@ namespace Repository.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         }
+
+        public async Task CreateUserAsync(User user)
+        {
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

@@ -12,6 +12,12 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="FirebaseAdmin" Version="3.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Middlewares\" />
   </ItemGroup>
 
 </Project>

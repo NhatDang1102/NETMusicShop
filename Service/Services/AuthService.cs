@@ -5,11 +5,13 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using FirebaseAdmin.Auth;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Repository.DTOs;
 using Repository.Interfaces;
 using Repository.Models;
+using Repository.Repositories;
 using Service.DTOs;
 using Service.Helpers;
 using Service.Interfaces;
@@ -129,5 +131,48 @@ namespace Service.Services
                 Name = user.Name
             };
         }
+
+
+public async Task<LoginResultDto> FirebaseLoginAsync(FirebaseLoginDto dto)
+    {
+        var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(dto.IdToken);
+        var email = decodedToken.Claims["email"].ToString();
+
+        var user = await _authRepository.GetUserByEmailAsync(email);
+
+        if (user == null)
+        {
+            user = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                Name = decodedToken.Claims.ContainsKey("name") ? decodedToken.Claims["name"].ToString() : "Unknown",
+                Role = "customer",
+                Status = "active",
+                CreatedAt = DateTime.Now
+            };
+
+            await _authRepository.CreateUserAsync(user);
+        }
+
+        var claims = new[]
+        {
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Name, user.Name),
+        new Claim(ClaimTypes.Role, user.Role)
+    };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(claims: claims, expires: DateTime.Now.AddHours(2), signingCredentials: creds);
+
+        return new LoginResultDto
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Role = user.Role,
+            Name = user.Name
+        };
     }
+
+}
 }

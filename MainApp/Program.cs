@@ -4,10 +4,15 @@ using Repository.Repositories;
 using Service.Helpers;
 using Service.Interfaces;
 using Service.Services;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://localhost:5000");
-
+FirebaseApp.Create(new AppOptions
+{
+    Credential = GoogleCredential.FromFile("netmusicshop-b5d9c-firebase-adminsdk-fbsvc-85c243175f.json")
+});
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

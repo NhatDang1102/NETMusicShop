@@ -14,6 +14,8 @@ namespace Repository.Interfaces
         Task<TempUser> GetTempUserByEmailAsync(string email);
         Task DeleteTempUserAsync(string email);
         Task<User> GetUserByEmailAsync(string email);
+        Task CreateUserAsync(User user);
+
 
     }
 }

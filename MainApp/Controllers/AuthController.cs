@@ -48,5 +48,20 @@ namespace MainApp.Controllers
             }
         }
 
+        [HttpPost("firebase-login")]
+        public async Task<IActionResult> FirebaseLogin([FromBody] FirebaseLoginDto dto)
+        {
+            try
+            {
+                var result = await _authService.FirebaseLoginAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+
     }
 }
