@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Repository.DTOs;
 using Repository.Interfaces;
 using Repository.Models;
+using Service.DTOs;
 using Service.Helpers;
 using Service.Interfaces;
 
@@ -16,10 +21,14 @@ namespace Service.Services
         private readonly IAuthRepository _authRepository;
         private readonly MailSender _mailSender;
         private readonly MusicShopDBContext _context;
-        public AuthService(IAuthRepository authRepository, MailSender mailSender, MusicShopDBContext context)
+        private readonly JwtSettings _jwtSettings;
+
+        public AuthService(IAuthRepository authRepository, MailSender mailSender, MusicShopDBContext context, IOptions<JwtSettings> jwtOptions)
         {
             _authRepository = authRepository;
             _mailSender = mailSender;
+            _jwtSettings = jwtOptions.Value;
+
             _context = context;
         }
 
@@ -77,6 +86,40 @@ namespace Service.Services
             await _authRepository.DeleteTempUserAsync(dto.Email);
 
             return "xac thuc thanh cong. tk da tao.";
+        }
+
+        public async Task<LoginResultDto> LoginAsync(LoginDto dto)
+        {
+            var user = await _authRepository.GetUserByEmailAsync(dto.Email);
+
+            if (user == null || user.Status != "active")
+                throw new Exception("Tài khoản không tồn tại hoặc bị khóa.");
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
+                throw new Exception("Mật khẩu sai");
+
+            var claims = new[]
+            {
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Name, user.Name ?? ""),
+        new Claim(ClaimTypes.Role, user.Role)
+    };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.Now.AddHours(2),
+                signingCredentials: creds
+            );
+
+            return new LoginResultDto
+            {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                Role = user.Role,
+                Name = user.Name
+            };
         }
     }
 }

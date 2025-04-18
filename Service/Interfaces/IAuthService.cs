@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Repository.DTOs;
 using Repository.Models;
+using Service.DTOs;
 
 namespace Service.Interfaces
 {
@@ -12,5 +13,7 @@ namespace Service.Interfaces
     {
         Task<string> RegisterAsync(RegisterDto dto);
         Task<string> VerifyOtpAsync(OtpVerifyDto dto);
+        Task<LoginResultDto> LoginAsync(LoginDto dto);
+
     }
 }

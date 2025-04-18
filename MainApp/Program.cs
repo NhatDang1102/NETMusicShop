@@ -18,6 +18,7 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddDbContext<MusicShopDBContext>();
 
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
