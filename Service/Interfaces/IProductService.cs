@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Repository.DTOs;
 using Repository.Models;
 
 namespace Service.Interfaces
@@ -11,7 +12,7 @@ namespace Service.Interfaces
     {
         Task<List<Product>> GetAllAsync();
         Task<Product> GetByIdAsync(Guid id);
-        Task<Product> CreateAsync(Product product);
+        Task<Product> CreateAsync(ProductCreateDto dto);
         Task<Product> UpdateAsync(Product product);
         Task<bool> DeleteAsync(Guid id);
     }

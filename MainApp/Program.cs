@@ -13,6 +13,11 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://localhost:5000");
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile("appsettings.Secret.json", optional: true, reloadOnChange: true);
+
+
 FirebaseApp.Create(new AppOptions
 {
     Credential = GoogleCredential.FromFile("netmusicshop-b5d9c-firebase-adminsdk-fbsvc-85c243175f.json")
@@ -22,7 +27,8 @@ FirebaseApp.Create(new AppOptions
 builder.Services.AddControllersWithViews();
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddSingleton<MailSender>();
-
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();

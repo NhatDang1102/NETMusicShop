@@ -30,6 +30,7 @@ docker-compose.override.yml
 # === secrets (nếu có) ===
 secrets.json
 appsettings.Development.json
+appsettings.Secret.json
 
 # === OS-specific ===
 .DS_Store

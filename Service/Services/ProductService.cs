@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Repository.DTOs;
 using Repository.Interfaces;
 using Repository.Models;
 using Repository.Repositories;
@@ -13,10 +14,12 @@ namespace Service.Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _repo;
-        public ProductService(IProductRepository repo)
+        private readonly IImageUploadService _imageUploadService;
+
+        public ProductService(IProductRepository repo, IImageUploadService imageUploadService)
         {
             _repo = repo;
-            
+            _imageUploadService = imageUploadService;
         }
 
         public async Task<List<Product>> GetAllAsync()
@@ -29,8 +32,22 @@ namespace Service.Services
             return await _repo.GetByIdAsync(id);
         }
 
-        public async Task<Product> CreateAsync(Product product)
+        public async Task<Product> CreateAsync(ProductCreateDto dto)
         {
+            var imageUrl = await _imageUploadService.UploadImageAsync(dto.Image);
+
+            var product = new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = dto.Name,
+                Description = dto.Description,
+                Price = dto.Price,
+                Stock = dto.Stock,
+                ImageUrl = imageUrl,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
             await _repo.CreateAsync(product);
             return product;
         }

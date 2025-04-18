@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Repository.DTOs;
 using Repository.Models;
 using Service.Interfaces;
+using Service.Services;
 
 namespace MainApp.Controllers
 {
@@ -31,12 +33,14 @@ namespace MainApp.Controllers
             return Ok(product);
         }
 
-        [HttpPost]
         [Authorize(Roles = "manager")]
-        public async Task<IActionResult> Create(Product product)
+        [HttpPost]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create([FromForm] ProductCreateDto dto)
         {
-            var created = await _service.CreateAsync(product);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            var product = await _service.CreateAsync(dto);
+            return Ok(product);
         }
+
     }
 }
