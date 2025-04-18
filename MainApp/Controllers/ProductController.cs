@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Repository.Models;
 using Service.Interfaces;
 
@@ -31,6 +32,7 @@ namespace MainApp.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "manager")]
         public async Task<IActionResult> Create(Product product)
         {
             var created = await _service.CreateAsync(product);
