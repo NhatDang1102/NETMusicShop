@@ -19,6 +19,10 @@ public partial class Order
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string ShippingAddress { get; set; }
+
+    public string PhoneNumber { get; set; }
+
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

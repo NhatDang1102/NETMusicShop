@@ -9,10 +9,6 @@ namespace Repository.Models;
 
 public partial class MusicShopDBContext : DbContext
 {
-    public MusicShopDBContext()
-    {
-    }
-
     public MusicShopDBContext(DbContextOptions<MusicShopDBContext> options)
         : base(options)
     {
@@ -49,6 +45,7 @@ public partial class MusicShopDBContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer(GetConnectionString("DefaultConnection")).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Cart>(entity =>
@@ -90,6 +87,8 @@ public partial class MusicShopDBContext : DbContext
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.PhoneNumber).HasMaxLength(50);
+            entity.Property(e => e.ShippingAddress).HasMaxLength(255);
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .HasDefaultValue("pending");
