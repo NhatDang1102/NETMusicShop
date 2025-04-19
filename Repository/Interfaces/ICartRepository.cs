@@ -10,6 +10,9 @@ namespace Repository.Interfaces
         Task AddOrUpdateCartItemAsync(Guid cartId, Guid productId, int quantity);
         Task<bool> RemoveCartItemAsync(Guid cartItemId);
 
+        Task<Product?> GetProductByIdAsync(Guid productId);
+        Task SaveProductAsync(Product product);
+        Task ClearCartAsync(Guid userId);
 
     }
 }

@@ -74,5 +74,30 @@ namespace Repository.Repositories
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<Product?> GetProductByIdAsync(Guid productId)
+        {
+            return await _context.Products.FindAsync(productId);
+        }
+
+        public async Task SaveProductAsync(Product product)
+        {
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task ClearCartAsync(Guid userId)
+        {
+            var cart = await _context.Carts.FirstOrDefaultAsync(c => c.UserId == userId);
+            if (cart == null) return;
+
+            var items = await _context.CartItems.Where(i => i.CartId == cart.Id).ToListAsync();
+            _context.CartItems.RemoveRange(items);
+
+            cart.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+
     }
 }
