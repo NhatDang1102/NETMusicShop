@@ -41,6 +41,9 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.Configure<GoogleSearchSettings>(builder.Configuration.GetSection("GoogleSearch"));
 builder.Services.AddDbContext<MusicShopDBContext>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
