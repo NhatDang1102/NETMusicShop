@@ -20,6 +20,7 @@ namespace Service.Services
         private readonly IPaymentRepository _paymentRepo;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _config;
+        private readonly MailSender _mailSender;
 
         public OrderService(
             IAuthRepository authRepo,
@@ -28,7 +29,8 @@ namespace Service.Services
             IVoucherRepository voucherRepo,
             IPaymentRepository paymentRepo,
             IHttpClientFactory httpClientFactory,
-            IConfiguration config)
+            IConfiguration config,
+            MailSender mailSender)
         {
             _authRepo = authRepo;
             _cartRepo = cartRepo;
@@ -37,6 +39,7 @@ namespace Service.Services
             _paymentRepo = paymentRepo;
             _httpClientFactory = httpClientFactory;
             _config = config;
+            _mailSender = mailSender;
         }
 
         public async Task<PayPalApprovalDto> CreateOrderWithPaypalAsync(string userEmail, OrderRequestDto dto)
@@ -76,7 +79,7 @@ namespace Service.Services
                 }
             }
 
-            // Gọi PayPal
+            // gọi PayPal
             var paypalClient = _httpClientFactory.CreateClient();
             var accessToken = await GetAccessTokenAsync(paypalClient);
             paypalClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -88,12 +91,9 @@ namespace Service.Services
             var body = new
             {
                 intent = "CAPTURE",
-                purchase_units = new[]
-                {
-                    new
-                    {
-                        amount = new
-                        {
+                purchase_units = new[] {
+                    new {
+                        amount = new {
                             currency_code = currency,
                             value = total.ToString("F2")
                         }
@@ -122,9 +122,12 @@ namespace Service.Services
                 UserId = user.Id,
                 Status = "pending",
                 VoucherId = voucher?.Id,
+                ShippingAddress = dto.ShippingAddress,
+                PhoneNumber = dto.PhoneNumber,
                 CreatedAt = DateTime.UtcNow,
                 OrderItems = orderItems
             };
+
             await _orderRepo.CreateOrderAsync(order);
 
             await _paymentRepo.CreatePaymentAsync(new Payment
@@ -152,34 +155,48 @@ namespace Service.Services
             var content = new StringContent("{}", Encoding.UTF8, "application/json");
 
             var captureResponse = await paypalClient.PostAsync(
-     $"{_config["PayPal:BaseUrl"]}/v2/checkout/orders/{paypalOrderId}/capture", content);
+                $"{_config["PayPal:BaseUrl"]}/v2/checkout/orders/{paypalOrderId}/capture", content);
             if (!captureResponse.IsSuccessStatusCode)
             {
                 var errorJson = await captureResponse.Content.ReadAsStringAsync();
                 throw new Exception("Lỗi capture: " + errorJson);
             }
 
-
             await _paymentRepo.UpdatePaymentStatusAsync(paypalOrderId, "completed");
 
-            // update order status
             var order = await _orderRepo.GetOrderByTransactionId(paypalOrderId);
-            if (order != null)
+            if (order == null) return false;
+
+            await _orderRepo.UpdateOrderStatusAsync(order.Id, "completed");
+
+            var itemInfos = new List<(string, int, decimal)>();
+            foreach (var item in order.OrderItems)
             {
-                await _orderRepo.UpdateOrderStatusAsync(order.Id, "completed");
-
-                // trừ stock
-                foreach (var item in order.OrderItems)
+                var product = await _cartRepo.GetProductByIdAsync(item.ProductId!.Value);
+                if (product != null)
                 {
-                    var product = await _cartRepo.GetProductByIdAsync(item.ProductId.Value);
-                    if (product != null)
-                    {
-                        product.Stock -= item.Quantity;
-                        await _cartRepo.SaveProductAsync(product);
-                        await _cartRepo.ClearCartAsync(order.UserId!.Value);
+                    product.Stock -= item.Quantity;
+                    await _cartRepo.SaveProductAsync(product);
 
-                    }
+                    itemInfos.Add((product.Name, item.Quantity!.Value, product.Price));
                 }
+            }
+
+
+            await _cartRepo.ClearCartAsync(order.UserId!.Value);
+
+            var user = await _authRepo.GetUserByEmailAsync(order.User.Email);
+            if (user != null)
+            {
+                decimal total = itemInfos.Sum(x => x.Item2 * x.Item3);
+                await _mailSender.SendOrderConfirmationEmailAsync(
+                    user.Email,
+                    user.Name,
+                    order.PhoneNumber ?? "Chưa rõ",
+                    order.ShippingAddress ?? "Chưa rõ",
+                    total,
+                    itemInfos
+                );
             }
 
             return true;

@@ -9,6 +9,10 @@ namespace Repository.Models;
 
 public partial class MusicShopDBContext : DbContext
 {
+    public MusicShopDBContext()
+    {
+    }
+
     public MusicShopDBContext(DbContextOptions<MusicShopDBContext> options)
         : base(options)
     {

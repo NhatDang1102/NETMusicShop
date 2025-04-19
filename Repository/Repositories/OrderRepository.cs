@@ -49,9 +49,12 @@ namespace Repository.Repositories
             return await _context.Payments
                 .Include(p => p.Order)
                     .ThenInclude(o => o.OrderItems)
+                .Include(p => p.Order)
+                    .ThenInclude(o => o.User) 
                 .Where(p => p.TransactionId == transactionId)
                 .Select(p => p.Order)
                 .FirstOrDefaultAsync();
         }
+
     }
 }
