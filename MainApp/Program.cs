@@ -20,7 +20,7 @@ builder.Configuration
 
 FirebaseApp.Create(new AppOptions
 {
-    Credential = GoogleCredential.FromFile("netmusicshop-b5d9c-firebase-adminsdk-fbsvc-85c243175f.json")
+    Credential = GoogleCredential.FromFile("netmusicshop-b5d9c-268b5c9d8876.json")
 });
 
 // Add services to the container.
@@ -39,6 +39,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.Configure<TikTokSettings>(builder.Configuration.GetSection("TikTok"));
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
