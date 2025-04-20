@@ -22,6 +22,8 @@ This is a student-built e-commerce web application using ASP.NET Core MVC, desig
 - Secure architecture & clean code separation
 - Payment online with Paypal
 - Customer Chat Bot, personally trained for Music and Headphone articles.
+
+  
 **Database** 
 ![image](https://github.com/user-attachments/assets/3b56ba56-3971-492f-988e-91a401453eba)
 
