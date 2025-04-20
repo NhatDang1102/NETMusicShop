@@ -31,7 +31,7 @@ docker-compose.override.yml
 secrets.json
 appsettings.Development.json
 appsettings.Secret.json
-
+netmusicshop-b5d9c-268b5c9d8876.json
 # === OS-specific ===
 .DS_Store
 Thumbs.db
