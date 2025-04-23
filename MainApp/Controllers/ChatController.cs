@@ -20,5 +20,14 @@ namespace MainApp.Controllers
             var reply = await _chatService.AskAssistantAsync(prompt, image);
             return Ok(new { reply });
         }
+
+
+        [HttpPost("generate-image")]
+        public async Task<IActionResult> GenerateImage([FromForm] string prompt)
+        {
+            var result = await _chatService.GenerateImageFromPromptAsync(prompt);
+            return Ok(new { imageUrl = result });
+        }
+
     }
 }
