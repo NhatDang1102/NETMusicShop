@@ -61,5 +61,39 @@ namespace Service.Helpers
             await smtpClient.SendMailAsync(mail);
         }
 
+        public async Task SendOrderConfirmationEmailAsync(string toEmail, string name, string phone, string address, decimal total, List<(string name, int quantity, decimal price)> items)
+        {
+            var itemDetails = string.Join("<br/>", items.Select(i =>
+                $"🎧 {i.name} - SL: {i.quantity} - Giá: {(i.quantity * i.price):C}"));
+
+            var body = $@"
+                Xin chào {name},<br/><br/>
+                Đơn hàng của bạn đã được đặt thành công tại <b>Music Shop</b>!<br/><br/>
+                <u>Thông tin đơn hàng:</u><br/>
+                🧾 Tổng tiền: {total:C}<br/>
+                📱 SĐT: {phone}<br/>
+                🏠 Địa chỉ: {address}<br/><br/>
+                <u>Chi tiết sản phẩm:</u><br/>
+                {itemDetails}<br/><br/>
+                Cảm ơn bạn đã tin tưởng chúng tôi!<br/><br/>
+                Trân trọng,<br/>Music Shop Team";
+
+            var mail = new MailMessage(_smtp.FromEmail, toEmail)
+            {
+                Subject = "Xác nhận đơn hàng - Music Shop",
+                Body = body,
+                IsBodyHtml = true
+            };
+
+            using var smtpClient = new SmtpClient("smtp.gmail.com", 587)
+            {
+                EnableSsl = true,
+                Credentials = new NetworkCredential(_smtp.FromEmail, _smtp.AppPassword)
+            };
+
+            await smtpClient.SendMailAsync(mail);
+        }
+
+
     }
 }
