@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FirebaseAdmin.Auth;
 using Microsoft.Extensions.Options;
@@ -24,14 +26,16 @@ namespace Service.Services
         private readonly MailSender _mailSender;
         private readonly MusicShopDBContext _context;
         private readonly JwtSettings _jwtSettings;
+        private readonly TikTokSettings _tiktokSettings;
 
-        public AuthService(IAuthRepository authRepository, MailSender mailSender, MusicShopDBContext context, IOptions<JwtSettings> jwtOptions)
+        public AuthService(IAuthRepository authRepository, MailSender mailSender, MusicShopDBContext context, IOptions<JwtSettings> jwtOptions, IOptions<TikTokSettings> tiktokOptions)
         {
             _repo = authRepository;
             _mailSender = mailSender;
             _jwtSettings = jwtOptions.Value;
-
+            _tiktokSettings = tiktokOptions.Value;
             _context = context;
+
         }
 
         public async Task<string> RegisterAsync(RegisterDto dto)
@@ -172,7 +176,98 @@ public async Task<LoginResultDto> FirebaseLoginAsync(FirebaseLoginDto dto)
             Role = user.Role,
             Name = user.Name
         };
-    }
 
-}
+    }
+        public async Task<LoginResultDto> LoginWithTikTokAsync(TikTokLoginDto dto)
+        {
+            var client = new HttpClient();
+
+            // 1. Đổi code lấy access_token
+            var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
+    {
+        { "client_key", _tiktokSettings.ClientKey },
+        { "client_secret", _tiktokSettings.ClientSecret },
+        { "code", dto.Code },
+        { "grant_type", "authorization_code" },
+        { "redirect_uri", _tiktokSettings.RedirectUri },
+        { "code_verifier", dto.CodeVerifier }
+    });
+
+            var tokenResponse = await client.PostAsync("https://open.tiktokapis.com/v2/oauth/token/", tokenRequest);
+            var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
+
+            Console.WriteLine("[TikTok] Token JSON:\n" + tokenJson); // Log phản hồi TikTok
+
+            var tokenResult = JsonSerializer.Deserialize<JsonElement>(tokenJson);
+
+            if (!tokenResult.TryGetProperty("access_token", out var accessTokenElement))
+            {
+                var err = tokenResult.TryGetProperty("error_description", out var desc)
+                    ? desc.GetString()
+                    : "Không lấy được access_token từ TikTok.";
+                throw new Exception($"[TikTok] Token Error: {err}");
+            }
+
+            var accessToken = accessTokenElement.GetString();
+
+            // 2. Gửi request lấy user info
+            var userInfoRequest = new HttpRequestMessage(
+                HttpMethod.Get,
+                "https://open.tiktokapis.com/v2/user/info/?fields=open_id,email,display_name"
+            );
+            userInfoRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var userResponse = await client.SendAsync(userInfoRequest);
+            var userJsonStr = await userResponse.Content.ReadAsStringAsync();
+            Console.WriteLine("[TikTok] User JSON:\n" + userJsonStr);
+
+            var userJson = JsonSerializer.Deserialize<JsonElement>(userJsonStr);
+
+            var userData = userJson.GetProperty("data").GetProperty("user");
+
+            var email = userData.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
+            var name = userData.TryGetProperty("display_name", out var nameProp) ? nameProp.GetString() : "TikTok User";
+
+            if (string.IsNullOrEmpty(email))
+                throw new Exception("Tài khoản TikTok không cung cấp email.");
+
+            // 3. Tạo user nếu chưa có
+            var user = await _repo.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Email = email,
+                    Name = name,
+                    Role = "customer",
+                    Status = "active",
+                    CreatedAt = DateTime.Now
+                };
+                await _repo.CreateUserAsync(user);
+            }
+
+            // 4. Sinh JWT
+            var claims = new[]
+            {
+        new Claim(ClaimTypes.Email, user.Email),
+        new Claim(ClaimTypes.Name, user.Name),
+        new Claim(ClaimTypes.Role, user.Role)
+    };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(claims: claims, expires: DateTime.Now.AddHours(2), signingCredentials: creds);
+
+            return new LoginResultDto
+            {
+                Token = new JwtSecurityTokenHandler().WriteToken(token),
+                Role = user.Role,
+                Name = user.Name
+            };
+        }
+
+
+
+    }
 }
